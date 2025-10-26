@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Note } from '../interfaces/note.interface';
-import { Firestore, collectionData, collection, doc, onSnapshot, addDoc } from '@angular/fire/firestore';
+import { Firestore, collectionData, collection, doc, onSnapshot, addDoc, updateDoc } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 
 
@@ -30,12 +30,38 @@ export class NoteListService {
     this.item$ = collectionData(notesRef, { idField: 'id' }) as Observable<Note[]>;
   }
 
+  async updateNote(note: Note) {
+    if (note.id) {
+      let docRef = this.getSingleDocRef(this.getColIdFromNote(note), note.id);
+      await updateDoc(docRef, this.getCleanJson(note)).catch(
+        (err) => { console.error(err); }
+      ).then();
+    }
+  }
+
+getCleanJson(note: Note):{} {
+  return {
+    type: note.type,
+    title: note.title,
+    content: note.content,
+    marked: note.marked,
+  }
+}
+
+  getColIdFromNote(note:Note) {
+    if (note.type == 'note') {
+      return 'notes'
+    } else {
+      return 'trash'
+    }
+  }
+
   async addNote(item: Note) {
     await addDoc(this.getNotesRef(), item).catch(
       (err) => { console.error(err) }
     ).then(
-        (docRef) => { console.log("Document written with ID: ", docRef?.id) }
-      );
+      (docRef) => { console.log("Document written with ID: ", docRef?.id) }
+    );
   }
 
   ngOnDestroy() {
